@@ -3,7 +3,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 
 project(nsh C)
 
-include_directories(${CMAKE_CURRENT_SOUCE_DIR}/include)
+set(INCLUDE_CURRENT_DIRECTORIES ON)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
 file(GLOB_RECURSE includes ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
