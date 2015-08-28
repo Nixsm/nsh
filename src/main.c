@@ -34,18 +34,59 @@ void timeTesting() {
 
 void handler(int signum){
     printf("SIGNAL %d\n", signum);
+    signal(signum, handler);
 }
 
 int main(int argc, char** argv){
+
+    int signalCount = 0;
+    int signo;
+    int signum = SIGXCPU;
+
+    sigset_t sigset;
+
+    if((sigemptyset(&sigset) == -1) || (sigaddset(&sigset, signum) == -1) || (sigprocmask(SIG_BLOCK, &sigset, NULL) == -1 ))
+        perror("Failed to block signals before sigwait\n");
+
+    fprintf(stderr, "This process has ID %ld\n", (long)getpid());
+
+    for ( ; ; ) {
+        if (fork() == 0){
+            for (int i = 0; i < 10000; ++i) {
+                continue;
+            }
+        } else {
+            printf("MEGA FOR LOOP RUNNING\n");
+        }
+        if (sigwait(&sigset, &signo) == -1) {
+            perror("failed to wait using sigwait");
+            return 1;
+        }
+
+        signalCount++;
+        fprintf(stderr, "Number of signals so far: %d\n", signalCount);
+
+        continue;
+    }
+
+    return 0;
+    signal(SIGVTALRM, handler);
+    signal(SIGALRM, handler);
+    signal(SIGPROF, handler);
+    signal(SIGXCPU, handler);
+
+
+    alarm(2);
+
     timeTesting();
-
+   
     char *argexe[]={"ls", "-la", NULL};
-
+    fork();
+    fork();
+    fork();
+    fork();
     while(1){
-        signal(SIGVTALRM, handler);
-        signal(SIGALRM, handler);
-        signal(SIGPROF, handler);
-
+        
         for (int i = 0; i < 10000000; ++i){
             continue;
         }
