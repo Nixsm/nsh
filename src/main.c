@@ -5,7 +5,9 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "makeargs.h"
 #include "time_measures.h"
+#include <sys/resource.h>
 
 #include <signal.h>
 
@@ -14,7 +16,8 @@ void timeTesting() {
     struct timeval tvBegin, tvEnd;
     double cpuTime, wallClockTime;
     int i;
-
+    struct rusage usage;
+    
     gettimeofday(&tvBegin, NULL);
     begin = clock();
 
@@ -28,57 +31,61 @@ void timeTesting() {
     cpuTime = getCPUTime(begin, end);
     wallClockTime = getWallClockTime(&tvBegin, &tvEnd);
 
+    getrusage(RUSAGE_SELF, &usage);
+
+    printf("Voluntary context Switches %ld\n", usage.ru_nvcsw);
+    printf("Involuntary context switches %ld\n", usage.ru_nivcsw);
+    printf("SYSTEM CPU Time: %f\n", timevalToMilliseconds(&usage.ru_stime));
+    printf("USER CPU Time: %f\n", timevalToMilliseconds(&usage.ru_utime));
+    
+    
     printf("CPU Time: %f\n", cpuTime);
     printf("Wall-clock Time: %f\n", wallClockTime);
 }
 
-void handler(int signum){
-    printf("SIGNAL %d\n", signum);
-    signal(signum, handler);
-}
-
 int main(int argc, char** argv){
+    char line[1024];
+    char* username = getenv("USER");
+    char curDir[1024];
+    char** parsedArgs;
+    
+    while(1) {
+        getcwd(curDir, sizeof(curDir));
+        printf("%s -- %s >>> ", username, curDir); gets(line);
 
-    int signalCount = 0;
-    int signo;
-    int signum = SIGXCPU;
-
-    sigset_t sigset;
-
-    if((sigemptyset(&sigset) == -1) || (sigaddset(&sigset, signum) == -1) || (sigprocmask(SIG_BLOCK, &sigset, NULL) == -1 ))
-        perror("Failed to block signals before sigwait\n");
-
-    fprintf(stderr, "This process has ID %ld\n", (long)getpid());
-
-    for ( ; ; ) {
+        if (feof(stdin)) {
+            break;
+        }
+        
+        makeArgs(line, " ", &parsedArgs);
+        
         if (fork() == 0){
-            for (int i = 0; i < 10000; ++i) {
-                continue;
+            if (strcmp(parsedArgs[0], "cd") == 0) {
+                chdir(parsedArgs[1]);
+            }else {
+                execvp(parsedArgs[0], parsedArgs);
+                printf("%s not found.\n", parsedArgs[0]);
             }
-        } else {
-            printf("MEGA FOR LOOP RUNNING\n");
-        }
-        if (sigwait(&sigset, &signo) == -1) {
-            perror("failed to wait using sigwait");
-            return 1;
+        }else {
+            wait(NULL);
         }
 
-        signalCount++;
-        fprintf(stderr, "Number of signals so far: %d\n", signalCount);
-
-        continue;
+        strcpy(line, "");
     }
 
     return 0;
-    signal(SIGVTALRM, handler);
-    signal(SIGALRM, handler);
-    signal(SIGPROF, handler);
-    signal(SIGXCPU, handler);
+    int size;
+    char** result;
+    int i;
+    
+    size = makeArgs("teste 123 x1", " ", &result);
 
-
-    alarm(2);
-
-    timeTesting();
+    for (i = 0; i < size; ++i) {
+        puts(result[i]);
+    }
+    
+        //timeTesting();
+    return 0;
    
     char *argexe[]={"ls", "-la", NULL};
     fork();

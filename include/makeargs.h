@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-void makeArgs(IN char* inputString, IN int inputSize, OUT int* size, OUT char*** strings);
+int makeArgs(IN char* inputString, IN char* delimiter, OUT char*** strings);
 
 
 #endif//MAKEARGS

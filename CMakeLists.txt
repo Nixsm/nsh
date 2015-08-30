@@ -5,6 +5,8 @@ project(nsh C)
 
 set(INCLUDE_CURRENT_DIRECTORIES ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
