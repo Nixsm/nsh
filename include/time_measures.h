@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "config.h"
+#include <sys/resource.h>
 
 /* Stolen from GNU
  * @param result output of subtraction
@@ -38,5 +39,7 @@ double getCPUTime(IN clock_t begin, IN clock_t end);
  * @see timevalSubtract
  */
 double getWallClockTime(IN struct timeval* begin, IN struct timeval* end);
+
+void printStatitics(IN struct timeval* wallClockBeginm, IN struct rusage* usage);
 
 #endif//TIME_MEASURES_H
