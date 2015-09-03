@@ -13,41 +13,15 @@
 
 #define QUIT_PHRASE "exit"
 #define LINE_SIZE 1024
+#define BACKGROUND_SYMBOL "&"
 
-void timeTesting() {
-    clock_t begin, end;
-    struct timeval tvBegin, tvEnd;
-    double cpuTime, wallClockTime;
-    int i;
-    struct rusage usage;
-    
-    gettimeofday(&tvBegin, NULL);
-    begin = clock();
 
-    for (i = 0; i < 1000000000; ++i) {
-        continue;
-    }
-
-    gettimeofday(&tvEnd, NULL);
-    end = clock();
-
-    cpuTime = getCPUTime(begin, end);
-    wallClockTime = getWallClockTime(&tvBegin, &tvEnd);
-
-    getrusage(RUSAGE_SELF, &usage);
-
-    printf("Voluntary context Switches %ld\n", usage.ru_nvcsw);
-    printf("Involuntary context switches %ld\n", usage.ru_nivcsw);
-    printf("SYSTEM CPU Time: %f\n", timevalToMilliseconds(&usage.ru_stime));
-    printf("USER CPU Time: %f\n", timevalToMilliseconds(&usage.ru_utime));
-    
-    
-    printf("CPU Time: %f\n", cpuTime);
-    printf("Wall-clock Time: %f\n", wallClockTime);
-}
-
+/* Handles the SIGINT */
 void sigHandler(int sig) {
-    signal(sig, sigHandler);
+  printf("ctrl-c received");
+  printf("\r");
+  signal(sig, sigHandler);
+
 }
 
 int main(int argc, char** argv){
@@ -63,11 +37,12 @@ int main(int argc, char** argv){
     struct rusage usage;
     int returnStatus;
 
-    signal(SIGINT, sigHandler);
 
     fputs("NSH VERSION 0.0.0.0.1\n", stdout);
     
     while(1) {
+        signal(SIGINT, sigHandler);
+
         getcwd(curDir, sizeof(curDir));
         username = getenv("USER");
         
@@ -97,17 +72,36 @@ int main(int argc, char** argv){
             if (strcmp(parsedArgs[0], "cd") == 0) {
                 chdir(parsedArgs[1]);
             }else{
-                gettimeofday(&wallClockBegin, NULL);
+	      if (strcmp(parsedArgs[argsLen - 1], BACKGROUND_SYMBOL) == 0) {
+		puts("Tried to run in background");
+		parsedArgs[argsLen - 1];
+		if (fork() == 0){ //Creates a process that never "returns"
+		  if (fork() == 0) {
+		    printf("Process %d started!\n", getpid());
+		    execvp(parsedArgs[0], parsedArgs);
+
+
+		    return 1;
+		  } else {
+		    int pid = wait(NULL);
+		    printf("Process with id %d finished!\n", pid);
+
+		    return 1;
+		  }
+		}
+	      }else{
+		gettimeofday(&wallClockBegin, NULL);
                 getrusage(RUSAGE_CHILDREN, &usage);
                 if (fork() == 0){
-                    execvp(parsedArgs[0], parsedArgs);
-                    printf("nsh: command not found: %s\n", parsedArgs[0]);
-                    return 1; /* for some strange reason this will return 256 later */
+		  execvp(parsedArgs[0], parsedArgs);
+		  printf("nsh: command not found: %s\n", parsedArgs[0]);
+		  return 1; /* for some strange reason this will return 256 later */
                 }
                 waitpid(-1, &returnStatus, 0);
                 if (returnStatus != 256) {
-                    printStatitics(&wallClockBegin, &usage); //Print statics when child return
+		  printStatitics(&wallClockBegin, &usage); //Print statics when child return
                 }
+	      }
             }
         }
         
