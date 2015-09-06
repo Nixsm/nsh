@@ -16,7 +16,7 @@ typedef enum {
 } job_status_t;
 
 typedef struct job {
-    char* runString; /* String called by the user */
+    char runString[256]; /* String called by the user */
     pid_t pgid; /* Group id of current proccess */
     int job; /* job index inside list */
     job_status_t jStatus; /* Status of this job */

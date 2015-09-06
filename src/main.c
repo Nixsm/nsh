@@ -25,18 +25,6 @@ void sigHandler(int sig) {
 }
 
 int main(int argc, char** argv){
-    Jobs jobs = createList();
-
-    add(&jobs, 0, "ls", FOREGROUND);
-    add(&jobs, 1, "sort", BACKGROUND);
-    
-    setStatus(&jobs, 1, TERMINATED);
-    delete(&jobs, 1);
-
-    showJobs(&jobs);
-
-
-    return 0;
     char line[LINE_SIZE];
     char* username;
     char curDir[1024];
@@ -48,7 +36,10 @@ int main(int argc, char** argv){
     struct rusage usage;
     int returnStatus;
     int background;
+    int pgid;
 
+    Jobs jobs = createList();
+    
     fputs("NSH VERSION 0.0.0.0.1\n", stdout);
     
     while(1) {
@@ -89,21 +80,32 @@ int main(int argc, char** argv){
         if (argsLen > 0){
             if (strcmp(parsedArgs[0], "cd") == 0) {
                 chdir(parsedArgs[1]);
-            }else{
+            } else if (strcmp(parsedArgs[0], "jobs") == 0) {
+                showJobs(&jobs);
+            } else {
                 gettimeofday(&wallClockBegin, NULL);
                 getrusage(RUSAGE_CHILDREN, &usage);
-                if (fork() == 0){
+                pgid = fork();
+                if (pgid == 0) {
                     execvp(parsedArgs[0], parsedArgs);
                     printf("nsh: command not found: %s\n", parsedArgs[0]);
                     return 1; /* for some strange reason this will return 256 later */
+                } else {
+                    if (background) {
+                        add(&jobs, pgid, line, BACKGROUND);
+                    } else {
+                        add(&jobs, pgid, line, FOREGROUND);
+                    }
                 }
                 if (!background) {
-                    waitpid(-1, &returnStatus, 0);
+                    waitpid(pgid, &returnStatus, 0);
                     if (returnStatus != 256) {
                         printStatitics(&wallClockBegin, &usage); //Print statics when child return
                     }
+                } else {
+                    
+                    waitpid(-1, &returnStatus, WUNTRACED);
                 }
-                while(waitpid(-1, &returnStatus, WNOHANG) > 0);
             }
         }
         

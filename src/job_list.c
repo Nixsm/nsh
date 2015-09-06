@@ -27,7 +27,7 @@ int add(INOUT Jobs* jobList, IN pid_t pgid, IN char* cmd, IN job_status_t status
     job_node_t* newNode = (job_node_t*)calloc(1, sizeof(job_node_t));
     
     newNode->pgid = pgid;
-    newNode->runString = cmd;
+    strcpy(newNode->runString, cmd);
     newNode->job = ++(jobList->size);
     newNode->jStatus = status;
     newNode->next = NULL;
@@ -94,7 +94,7 @@ char* getStatusString(IN job_status_t status) {
 void showJobs(INOUT Jobs* jobList) {
     job_node_t* begin = jobList->begin;
 
-    printf("[JobID]\tstatus\t\tgID\t\tCMD\n");
+    printf("[JobID]\t\tstatus\t\tgID\t\tCMD\n");
     while (begin) {
         printf("[%d]\t\t%s\t%ld\t\t%s\n", begin->job, getStatusString(begin->jStatus), begin->pgid, begin->runString);
         begin = begin->next;
