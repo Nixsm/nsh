@@ -25,11 +25,15 @@ void sigHandler(int sig) {
 }
 
 int main(int argc, char** argv){
-    Jobs job = createList();
+    Jobs jobs = createList();
 
-    add(&job, 0, "ls", FOREGROUND);
+    add(&jobs, 0, "ls", FOREGROUND);
+    add(&jobs, 1, "sort", BACKGROUND);
+    
+    setStatus(&jobs, 1, TERMINATED);
+    delete(&jobs, 1);
 
-    //showJobs(&job);
+    showJobs(&jobs);
 
 
     return 0;

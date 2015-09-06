@@ -22,25 +22,35 @@ void destroyList(INOUT Jobs* joblist) {
 
 int add(INOUT Jobs* jobList, IN pid_t pgid, IN char* cmd, IN job_status_t status) {
     job_node_t* begin = jobList->begin;
-
+    job_node_t* before = NULL;
+    
     job_node_t* newNode = (job_node_t*)calloc(1, sizeof(job_node_t));
     
     newNode->pgid = pgid;
-    strcpy(newNode->runString, cmd);
+    newNode->runString = cmd;
     newNode->job = ++(jobList->size);
     newNode->jStatus = status;
+    newNode->next = NULL;
     
-    while (begin) {
+    while ((begin)) {
+        before = begin;
         begin = begin->next;
     }
-
-    begin->next = newNode;
+    
+    if (before)
+        before->next = newNode;
+    else {
+        jobList->begin = newNode;
+    }
+    
+    return newNode->job;
 }
 
 int delete(INOUT Jobs* jobList, IN int job) {
     job_node_t* begin = jobList->begin;
 
     job_node_t* before = NULL;
+    
 
     job_node_t* toBeDeleted = NULL;
     
@@ -84,9 +94,9 @@ char* getStatusString(IN job_status_t status) {
 void showJobs(INOUT Jobs* jobList) {
     job_node_t* begin = jobList->begin;
 
-    printf("[JobID] status groupID CMD\n");
+    printf("[JobID]\tstatus\t\tgID\t\tCMD\n");
     while (begin) {
-        printf("[%d] %s %ld %s\n", begin->job, getStatusString(begin->jStatus), begin->pgid, begin->runString);
+        printf("[%d]\t\t%s\t%ld\t\t%s\n", begin->job, getStatusString(begin->jStatus), begin->pgid, begin->runString);
         begin = begin->next;
     }
 }
