@@ -11,6 +11,8 @@
 
 #include <signal.h>
 
+#include "job_list.h"
+
 #define QUIT_PHRASE "exit"
 #define LINE_SIZE 1024
 #define BACKGROUND_SYMBOL '&'
@@ -18,14 +20,19 @@
 
 /* Handles the SIGINT */
 void sigHandler(int sig) {
-  printf("ctrl-c received");
-  printf("\r");
-  signal(sig, sigHandler);
-
+    printf("\r");
+    signal(sig, sigHandler);
 }
 
 int main(int argc, char** argv){
+    Jobs job = createList();
 
+    add(&job, 0, "ls", FOREGROUND);
+
+    //showJobs(&job);
+
+
+    return 0;
     char line[LINE_SIZE];
     char* username;
     char curDir[1024];
@@ -79,35 +86,20 @@ int main(int argc, char** argv){
             if (strcmp(parsedArgs[0], "cd") == 0) {
                 chdir(parsedArgs[1]);
             }else{
-                if (background) {
-                    puts("Tried to run in background");
-                    
-                    if (fork() != 0) {
-                        if (fork() == 0) {
-                            printf("Process %d started!\n", getpid());
-                            execvp(parsedArgs[0], parsedArgs);
-
-                            return 1;
-                        } else {
-                            int pid = wait(NULL);
-                            printf("Process with id %d finished!\n", pid);
-
-                            return 1;
-                        }
-                    }
-                }else{
-                    gettimeofday(&wallClockBegin, NULL);
-                    getrusage(RUSAGE_CHILDREN, &usage);
-                    if (fork() == 0){
-                        execvp(parsedArgs[0], parsedArgs);
-                        printf("nsh: command not found: %s\n", parsedArgs[0]);
-                        return 1; /* for some strange reason this will return 256 later */
-                    }
+                gettimeofday(&wallClockBegin, NULL);
+                getrusage(RUSAGE_CHILDREN, &usage);
+                if (fork() == 0){
+                    execvp(parsedArgs[0], parsedArgs);
+                    printf("nsh: command not found: %s\n", parsedArgs[0]);
+                    return 1; /* for some strange reason this will return 256 later */
+                }
+                if (!background) {
                     waitpid(-1, &returnStatus, 0);
                     if (returnStatus != 256) {
                         printStatitics(&wallClockBegin, &usage); //Print statics when child return
                     }
                 }
+                while(waitpid(-1, &returnStatus, WNOHANG) > 0);
             }
         }
         
